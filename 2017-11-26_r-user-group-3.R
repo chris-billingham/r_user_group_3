@@ -132,4 +132,149 @@ ggplot(housing_sum, aes(x=State, y=Home.Value)) +
 
 # much better. stat = "identity" just says "use the number you find"
 
+# scales
+# aesthetic mapping only determines what variable should be
+# mapped to an aesthetic. it doesn't say how it should happen.
+# so aes(shape = x) just says use x for shape, it doesn't say
+# what shape. similarly aes(colour = x) just says use x for colour
+# not what colour. scales allow you to change that
+
+# let's make a dot plot of state by HPI
+# not the use of the theme to put some words on
+plot_3 <- ggplot(housing,
+             aes(x = State,
+                 y = Home.Price.Index)) + 
+  theme(legend.position="top",
+        axis.text=element_text(size = 6))
+
+plot_3
+# note, no geom, no data
+# let's do some layering
+plot_4 <- (plot_3 + geom_point(aes(color = Date),
+                       alpha = 0.5,
+                       size = 1.5,
+                       position = position_jitter(width = 0.25, height = 0)))
+
+plot_4
+# jiggly
+# now were going to amend the breaks for the x-axis and the colour
+plot_4 + scale_x_discrete(name="State Abbreviation") +
+  scale_color_continuous(name="",
+                         breaks = c(1976, 1994, 2013),
+                         labels = c("'76", "'94", "'13"))
+
+
+# finally we're going to change the colour scale so
+# low is blue and high is red
+plot_4 +
+  scale_x_discrete(name="State Abbreviation") +
+  scale_color_continuous(name="",
+                         breaks = c(1976, 1994, 2013),
+                         labels = c("'76", "'94", "'13"),
+                         low = "blue", high = "red")
+
+# colourful but probably a bit bright
+# the scales package can help here, with the function muted()
+library(scales)
+plot_4 +
+  scale_color_continuous(name="",
+                         breaks = c(1976, 1994, 2013),
+                         labels = c("'76", "'94", "'13"),
+                         low = muted("blue"), high = muted("red"))
+
+# not nearly as garish
+# ggplot has loads of different colour scales you can experiment with
+# here we're going to use scale_color_gradient2 to add a middle colour
+plot_4 +
+  scale_color_gradient2(name="",
+                        breaks = c(1976, 1994, 2013),
+                        labels = c("'76", "'94", "'13"),
+                        low = muted("blue"),
+                        high = muted("red"),
+                        mid = "gray60",
+                        midpoint = 1994)
+
+# faceting
+# you know in excel when you make a chart and want to do that same chart
+# but for loads of different filters (i.e. trading_title_codes)
+# and how that's a pain in the backside
+# let faceting guide you.
+
+# here's the basic date/value plot with all states
+plot_5 <- ggplot(housing, aes(x = Date, y = Home.Value))
+plot_5 + 
+  geom_line(aes(color = State))  
+
+# a bit busy
+# let's use facet_wrap
+plot_5 + 
+  geom_line() +
+  facet_wrap(~ State, ncol = 10)
+
+# note, they all use the same x and y axes
+# you can let them use their own with scales = "free"
+# however be careful with it
+plot_5 + 
+  geom_line() +
+  facet_wrap(~ State, ncol = 10, scales = "free")
+
+# themes
+# themes allow you to set all non-plot elements at once
+# such as axis labels, background colours and so on
+plot_5 + 
+  geom_line() +
+  facet_wrap(~ State, ncol = 10) +
+  theme_linedraw()
+
+plot_5 + 
+  geom_line() +
+  facet_wrap(~ State, ncol = 10) +
+  theme_minimal()
+
+# you can also make your own. this can take a while but does look good
+theme_new <- theme_bw() +
+  theme(plot.background = element_rect(size = 1, color = "blue", fill = "black"),
+        text=element_text(size = 12, color = "ivory"),
+        axis.text.y = element_text(colour = "purple"),
+        axis.text.x = element_text(colour = "red"),
+        panel.background = element_rect(fill = "pink"),
+        strip.background = element_rect(fill = muted("orange")))
+
+plot_5 + 
+  geom_line() +
+  facet_wrap(~ State, ncol = 10) +
+  theme_new
+
+# hideous
+# finally a word on data formatting when used with ggplot
+# if you have two variables in your data frame you want to plot
+# on the same chart with different colours
+
+housing_byyear <- housing %>%
+  group_by(Date) %>%
+  summarise(Home.Value = mean(Home.Value), Land.Value = mean(Land.Value))
+
+# this looks right but is wrong
+# well it's wrong, from a certain point of view
+ggplot(housing_byyear,
+       aes(x=Date)) +
+  geom_line(aes(y=Home.Value), color="red") +
+  geom_line(aes(y=Land.Value), color="blue")
+
+# you've used wide (or tidy) data, however if you want to efficiently
+# use all ggplot's functionality it's best to use long data
+library(tidyr)
+home_land_byyear <- gather(housing_byyear,
+                           value = "value",
+                           key = "type",
+                           Home.Value, Land.Value)
+
+head(home_land_byyear)
+
+# which gives you this, much more succint
+ggplot(home_land_byyear,
+       aes(x=Date,
+           y=value,
+           color=type)) +
+  geom_line()
 

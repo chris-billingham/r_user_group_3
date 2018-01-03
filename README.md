@@ -1,2 +1,5 @@
 # r_user_group_3
-ggplot
+Introduction to ggplot2
+
+These are the slides and the code for the third N Brown R User group.
+
